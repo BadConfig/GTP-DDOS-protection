@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  server:
+    build:
+      context: .
+      target: server
+    container_name: server
+    volumes:
+      - ./dockerized_config.json:/app/config.json
+    environment:
+      - ADDRESS=server:8000
+      - BIND_ADDRESS=0.0.0.0:8000
+      - CONFIG=./config.json
+    restart: unless-stopped
+  client:
+    build:
+      context: .
+      target: client
+    container_name: client
+    environment:
+      - SERVER_ADDRESS=server:8000
+    depends_on:
+        - server
+        - guide1
+    restart: unless-stopped
+  guide1:
+    build:
+      context: .
+      target: guide
+    container_name: guide1
+    volumes:
+      - ./dockerized_config.json:/app/config.json
+    environment:
+      - CONFIG=./config.json
+      - ADDRESS=guide1:4001
+      - BIND_ADDRESS=0.0.0.0:4001
+    restart: unless-stopped
+  guide2:
+    build:
+      context: .
+      target: guide
+    container_name: guide2
+    volumes:
+      - ./dockerized_config.json:/app/config.json
+    environment:
+      - CONFIG=./config.json
+      - ADDRESS=guide2:4002
+      - BIND_ADDRESS=0.0.0.0:4002
+    restart: unless-stopped
+  guide3:
+    build:
+      context: .
+      target: guide
+    container_name: guide3
+    volumes:
+      - ./dockerized_config.json:/app/config.json
+    environment:
+      - CONFIG=./config.json
+      - ADDRESS=guide3:4003
+      - BIND_ADDRESS=0.0.0.0:4003
+    restart: unless-stopped

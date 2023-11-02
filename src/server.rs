@@ -57,8 +57,11 @@ impl QuoteServer {
         }
     }
 
-    pub async fn serve<H: Hmac + DeserializeOwned>(self) -> (JoinHandle<()>, oneshot::Sender<()>) {
-        let server = Server::http(self.address.clone()).unwrap();
+    pub async fn serve<H: Hmac + DeserializeOwned>(
+        self,
+        bind_address: Address,
+    ) -> (JoinHandle<()>, oneshot::Sender<()>) {
+        let server = Server::http(bind_address).unwrap();
 
         let (tx, mut rx) = oneshot::channel();
 
