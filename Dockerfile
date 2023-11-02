@@ -7,28 +7,28 @@ COPY ./Cargo.toml ./Cargo.toml
 COPY ./src ./src
 RUN cargo build --release
 
-FROM debian:latest as client
+FROM debian:stable as client
 
 COPY --from=builder /app/target/release/client /app/client
-RUN apt-get update && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update --allow-unauthenticated && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/
 
 CMD ["/app/client"]
 
-FROM debian:latest as server
+FROM debian:stable as server
 
 COPY --from=builder /app/target/release/quote_server /app/server
-RUN apt-get update && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update --allow-unauthenticated && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/
 
 EXPOSE 8000
 
 CMD ["/app/server"]
 
-FROM debian:latest as guide
+FROM debian:stable as guide
 
 COPY --from=builder /app/target/release/guide /app/guide
-RUN apt-get update && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update --allow-unauthenticated && apt-get -y install ca-certificates libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/
 
 EXPOSE 4001

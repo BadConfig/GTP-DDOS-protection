@@ -65,8 +65,8 @@ impl QuoteServer {
 
         let (tx, mut rx) = oneshot::channel();
 
+        println!("server started accepting connections");
         let handle = tokio::task::spawn_blocking(move || loop {
-            println!("server started accepting connections");
             if let Ok(Some(mut request)) = server.recv_timeout(Duration::from_millis(100)) {
                 let secrets = self.secrets.clone();
                 let address = self.address.clone();
