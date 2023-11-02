@@ -118,14 +118,13 @@ impl GtpCrypto {
         let (guide_address, guide_secret) = storage
             .iter()
             .filter(|v| *v.0 != server_address)
-            .skip(next_guide)
-            .next()
+            .nth(next_guide)
             .expect("unreachable");
 
         let mut value = Vec::new();
-        value.extend(user_address.as_bytes().iter().cloned());
+        value.extend(user_address.as_bytes());
         value.extend([length]);
-        value.extend(guide_address.as_bytes().iter().cloned());
+        value.extend(guide_address.as_bytes());
         value.extend(ts.to_le_bytes());
 
         let h0 = H::sign(&value, &server_secret);
@@ -168,8 +167,7 @@ impl GtpCrypto {
             storage
                 .iter()
                 .filter(|v| *v.0 != server_address)
-                .skip(next_guide)
-                .next()
+                .nth(next_guide)
                 .expect("unreachable")
                 .to_owned()
         } else {
@@ -186,7 +184,7 @@ impl GtpCrypto {
         h_value.extend([request.step]);
         h_value.extend(address_this.as_bytes());
         h_value.extend(next_guide_address.as_bytes().iter().cloned());
-        let h = H::sign(&h_value, &first_guide_secret);
+        let h = H::sign(&h_value, first_guide_secret);
 
         let mut msg_value = Vec::new();
         msg_value.extend(request.previous_msg.as_ref());
@@ -209,7 +207,7 @@ impl GtpCrypto {
     pub fn aggregate<H: Hmac>(
         user_address: &Address,
         storage: &SecretsStorage,
-        address_this: String,
+        _address_this: String,
         server_address: Address,
         request: GtpAggregationRequest<H>,
         ts: u128,
@@ -236,7 +234,7 @@ impl GtpCrypto {
                     .iter()
                     .cloned(),
             );
-            let b = H::sign(&b, &guide_secret);
+            let b = H::sign(&b, guide_secret);
 
             h = H::xor(h, b);
         }
@@ -255,7 +253,7 @@ impl GtpCrypto {
         sol_val.extend(user_address.as_bytes().iter().cloned());
         sol_val.extend([request.length]);
         sol_val.extend(ts.to_le_bytes());
-        let sol_h = H::sign(&sol_val, &server_secret);
+        let sol_h = H::sign(&sol_val, server_secret);
 
         Some(GtpAggregationResponse { h_sol: sol_h, ts })
     }
@@ -284,7 +282,7 @@ impl GtpCrypto {
         h_sol_val.extend(user_address.as_bytes().iter().cloned());
         h_sol_val.extend([request.length]);
         h_sol_val.extend(&request.last_ts.to_le_bytes());
-        H::verify(&h_sol_val, &request.h_sol, &guide_1_secret)
+        H::verify(&h_sol_val, &request.h_sol, guide_1_secret)
             && H::verify(&h0_val, &request.h0, &server_secret)
             && ts - request.last_ts < time_delta
     }

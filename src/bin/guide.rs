@@ -6,8 +6,8 @@ async fn main() {
     let guide_address = std::env::var("ADDRESS").expect("address should present");
     let bind_address = std::env::var("BIND_ADDRESS").expect("bind address should present");
     let config = Config::from_file(&config_path);
-    let (_, _) = Guide::from_config(&config, guide_address.into())
+    let (handle, _) = Guide::from_config(&config, guide_address)
         .serve::<Blake3Hasher>(bind_address)
         .await;
-    loop {}
+    handle.await.unwrap();
 }

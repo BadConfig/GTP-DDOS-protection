@@ -6,8 +6,8 @@ async fn main() {
     let server_address = std::env::var("ADDRESS").expect("address should present");
     let bind_address = std::env::var("BIND_ADDRESS").expect("bind address should present");
     let config = Config::from_file(&config_path);
-    let (_, _) = QuoteServer::from_config(&config, server_address.into(), 1000000000000000000)
+    let (handle, _) = QuoteServer::from_config(&config, server_address, 1000000000000000000)
         .serve::<Blake3Hasher>(bind_address)
         .await;
-    loop {}
+    handle.await.unwrap();
 }

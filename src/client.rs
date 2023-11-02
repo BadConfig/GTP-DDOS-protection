@@ -142,24 +142,5 @@ pub async fn make_request<H: Hmac + Serialize>(address: Address) -> Option<Strin
     };
 
     res.get("text")
-        .map(|t| t.as_str().map(|t| t.to_string()))
-        .flatten()
-
-    // pub struct GtpTourRequest<H: Hmac> {
-    //     pub h0: H::Sign,
-    //     pub length: u8,
-    //     pub step: u8,
-    //     pub previous_ts: u128,
-    //     pub previous_msg: H::Sign,
-    //     pub previous_msg_2: H::Sign,
-    //     pub address_1: Address,
-    //     pub previous_address: Address,
-    // }
+        .and_then(|t| t.as_str().map(|t| t.to_string()))
 }
-
-//pub struct GtpSetupResponse<H: Hmac> {
-//    pub h0: H::Sign,
-//    pub length: u8,
-//    pub ts: u128,
-//    pub msg: H::Sign,
-//    pub address_1: Address,

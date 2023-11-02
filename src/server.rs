@@ -69,7 +69,7 @@ impl QuoteServer {
             if let Ok(Some(mut request)) = server.recv_timeout(Duration::from_millis(100)) {
                 let secrets = self.secrets.clone();
                 let address = self.address.clone();
-                let server_secret = self.secret.clone();
+                let server_secret = self.secret;
 
                 tokio::spawn(async move {
                     let user_address = request.remote_addr().unwrap().clone().ip().to_string();
@@ -114,7 +114,7 @@ impl QuoteServer {
                         );
                         let response =
                             Response::from_string(serde_json::to_string(&challenge).unwrap());
-                        request.respond(response);
+                        let _ = request.respond(response);
                     }
                 });
             }

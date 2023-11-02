@@ -8,7 +8,6 @@ use tiny_http::{Response, Server};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 
-use std::error::Error;
 use std::sync::Arc;
 
 pub struct Guide {
@@ -71,7 +70,7 @@ impl Guide {
                                 let response = Response::from_string(
                                     serde_json::to_string(&tour_res).unwrap(),
                                 );
-                                request.respond(response);
+                                let _ = request.respond(response);
                             }
                             GtpGuideTcpRequest::Aggregation(agg) => {
                                 let agg_res = GtpCrypto::aggregate(
@@ -84,7 +83,7 @@ impl Guide {
                                 );
                                 let response =
                                     Response::from_string(serde_json::to_string(&agg_res).unwrap());
-                                request.respond(response);
+                                let _ = request.respond(response);
                             }
                         }
                     }
