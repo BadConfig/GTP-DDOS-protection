@@ -1,10 +1,12 @@
 use crate::bootstrap::Config;
 use crate::crypto::hmac::Hmac;
 use crate::crypto::{Address, GtpCrypto, GtpGuideTcpRequest, SecretsStorage};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::de::DeserializeOwned;
 use tiny_http::{Response, Server};
+use tokio::sync::oneshot;
+use tokio::task::JoinHandle;
 
 use std::error::Error;
 use std::sync::Arc;
@@ -16,7 +18,7 @@ pub struct Guide {
 }
 
 impl Guide {
-    fn from_config(config: Config, address: Address) -> Self {
+    pub fn from_config(config: &Config, address: Address) -> Self {
         Self {
             secrets: Arc::new(
                 config
@@ -25,27 +27,22 @@ impl Guide {
                     .expect("Guide address should present in config")
                     .to_owned(),
             ),
-            server_address: config.server_address,
+            server_address: config.server_address.clone(),
             address,
         }
     }
 
-    async fn serve<H: Hmac + DeserializeOwned>(self) -> Result<(), Box<dyn Error>> {
+    pub async fn serve<H: Hmac + DeserializeOwned>(self) -> (JoinHandle<()>, oneshot::Sender<()>) {
         let server = Server::http(self.address.clone()).unwrap();
 
-        tokio::task::spawn_blocking(move || {
-            for mut request in server.incoming_requests() {
+        let (tx, mut rx) = oneshot::channel();
+        let handle = tokio::task::spawn_blocking(move || loop {
+            if let Ok(Some(mut request)) = server.recv_timeout(Duration::from_millis(100)) {
                 let secrets = self.secrets.clone();
                 let address_this = self.address.clone();
                 let server_address = self.server_address.clone();
                 tokio::spawn(async move {
-                    println!(
-                        "received request! method: {:?}, url: {:?}, headers: {:?}",
-                        request.method(),
-                        request.url(),
-                        request.headers()
-                    );
-                    let user_address = request.remote_addr().unwrap().clone();
+                    let user_address = request.remote_addr().unwrap().clone().ip();
 
                     let mut buf = Vec::new();
                     request.as_reader().read_to_end(&mut buf).unwrap();
@@ -60,7 +57,7 @@ impl Guide {
                     if let Ok(body) = serde_json::from_slice::<GtpGuideTcpRequest<H>>(&buf) {
                         match body {
                             GtpGuideTcpRequest::Tour(tour) => {
-                                GtpCrypto::process_tour(
+                                let tour_res = GtpCrypto::process_tour(
                                     &user_address.to_string(),
                                     &secrets,
                                     address_this,
@@ -68,11 +65,13 @@ impl Guide {
                                     tour,
                                     ts,
                                 );
-                                let response = Response::from_string("hello world");
+                                let response = Response::from_string(
+                                    serde_json::to_string(&tour_res).unwrap(),
+                                );
                                 request.respond(response);
                             }
                             GtpGuideTcpRequest::Aggregation(agg) => {
-                                GtpCrypto::aggregate(
+                                let agg_res = GtpCrypto::aggregate(
                                     &user_address.to_string(),
                                     &secrets,
                                     address_this,
@@ -80,15 +79,18 @@ impl Guide {
                                     agg,
                                     ts,
                                 );
-                                let response = Response::from_string("hello world");
+                                let response =
+                                    Response::from_string(serde_json::to_string(&agg_res).unwrap());
                                 request.respond(response);
                             }
                         }
                     }
                 });
             }
-        })
-        .await?;
-        Ok(())
+            if rx.try_recv().is_ok() {
+                break;
+            }
+        });
+        (handle, tx)
     }
 }

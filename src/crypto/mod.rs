@@ -152,9 +152,11 @@ impl GtpCrypto {
         let (_, prev_guide_secret) = storage
             .iter()
             .find(|v| v.0 == request.previous_address)
-            .expect("unreachable");
+            .expect("Should be able to find previous guide");
 
-        if !request.verify(*prev_guide_secret, user_address, &address_this) {
+        if !request.verify(*prev_guide_secret, user_address, &address_this)
+            || request.length - 1 < request.step
+        {
             return None;
         }
         let next_guide: usize = rand::thread_rng().gen_range(0..storage.len() - 1);
