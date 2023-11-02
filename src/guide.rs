@@ -39,12 +39,14 @@ impl Guide {
 
         let (tx, mut rx) = oneshot::channel();
         let handle = tokio::task::spawn_blocking(move || loop {
+            println!("server started accepting connections");
             if let Ok(Some(mut request)) = server.recv_timeout(Duration::from_millis(100)) {
                 let secrets = self.secrets.clone();
                 let address_this = self.address.clone();
                 let server_address = self.server_address.clone();
                 tokio::spawn(async move {
                     let user_address = request.remote_addr().unwrap().clone().ip();
+                    println!("received request from {}", user_address);
 
                     let mut buf = Vec::new();
                     request.as_reader().read_to_end(&mut buf).unwrap();

@@ -66,6 +66,7 @@ impl QuoteServer {
         let (tx, mut rx) = oneshot::channel();
 
         let handle = tokio::task::spawn_blocking(move || loop {
+            println!("server started accepting connections");
             if let Ok(Some(mut request)) = server.recv_timeout(Duration::from_millis(100)) {
                 let secrets = self.secrets.clone();
                 let address = self.address.clone();
@@ -73,6 +74,7 @@ impl QuoteServer {
 
                 tokio::spawn(async move {
                     let user_address = request.remote_addr().unwrap().clone().ip().to_string();
+                    println!("received request from {}", user_address);
 
                     let mut buf = Vec::new();
                     request.as_reader().read_to_end(&mut buf).unwrap();

@@ -85,7 +85,7 @@ pub async fn make_request<H: Hmac + Serialize>(address: Address) -> Option<Strin
         address_1: setup_data.address_1.clone(),
         address_this: previous_address,
         length: setup_data.length,
-        pervious_ts: previous_ts,
+        previous_ts,
         previous_msg,
         previous_msg_2,
         step: setup_data.length,

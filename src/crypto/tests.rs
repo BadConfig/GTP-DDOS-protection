@@ -151,7 +151,7 @@ fn happy_path() {
         hl: hxor,
         length: setup_response.length,
         step: setup_response.length,
-        pervious_ts: tour_result.ts,
+        previous_ts: tour_result.ts,
         previous_msg: tour_result.msg,
         previous_msg_2: request.previous_msg,
         address_1: setup_response.address_1.clone(),

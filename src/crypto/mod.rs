@@ -35,7 +35,7 @@ pub struct GtpAggregationRequest<H: Hmac> {
     pub hl: H::Sign,
     pub length: u8,
     pub step: u8,
-    pub pervious_ts: u128,
+    pub previous_ts: u128,
     pub previous_msg: H::Sign,
     pub previous_msg_2: H::Sign,
     pub address_1: Address,
@@ -73,6 +73,24 @@ pub struct GtpTourRequest<H: Hmac> {
 pub enum GtpGuideTcpRequest<H: Hmac> {
     Tour(GtpTourRequest<H>),
     Aggregation(GtpAggregationRequest<H>),
+}
+
+impl<H: Hmac> GtpAggregationRequest<H> {
+    fn verify(&self, secret: Secret, user_address: &Address, address: &Address) -> bool {
+        let mut value = Vec::new();
+        value.extend(self.previous_msg_2.as_ref());
+        value.extend(user_address.as_bytes());
+        value.extend([self.length]);
+        value.extend([self.step - 1]);
+        value.extend(self.previous_address().as_bytes());
+        value.extend(address.as_bytes().iter().cloned());
+        value.extend(self.previous_ts.to_le_bytes());
+        H::verify(&value, &self.previous_msg, &secret)
+    }
+
+    fn previous_address(&self) -> &Address {
+        self.path.last().as_ref().unwrap()
+    }
 }
 
 impl<H: Hmac> GtpTourRequest<H> {
@@ -207,12 +225,22 @@ impl GtpCrypto {
     pub fn aggregate<H: Hmac>(
         user_address: &Address,
         storage: &SecretsStorage,
-        _address_this: String,
+        address_this: String,
         server_address: Address,
         request: GtpAggregationRequest<H>,
         ts: u128,
     ) -> Option<GtpAggregationResponse<H>> {
+        let (_, prev_guide_secret) = storage
+            .iter()
+            .find(|v| v.0 == *request.previous_address())
+            .expect("Should be able to find previous guide");
+
+        if !request.verify(*prev_guide_secret, user_address, &address_this) {
+            return None;
+        }
+
         let mut h = request.h0.clone();
+
         for (i, address) in request.path.clone().into_iter().enumerate() {
             let (_, guide_secret) = storage
                 .iter()
