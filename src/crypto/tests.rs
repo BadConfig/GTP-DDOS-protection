@@ -36,7 +36,7 @@ fn happy_path() {
     let setup_response: GtpSetupResponse<Blake3Hasher> = GtpCrypto::setup(
         &client_addr.to_string(),
         length,
-        server_keys.clone(),
+        &server_keys,
         server_secret,
         "localhost:8000".to_string(),
         10,
@@ -62,7 +62,7 @@ fn happy_path() {
     let tour_result = if setup_response.address_1 == "localhost:4001".to_string() {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide1_keys.clone(),
+            &guide1_keys,
             "localhost:4001".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -71,7 +71,7 @@ fn happy_path() {
     } else {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide2_keys.clone(),
+            &guide2_keys,
             "localhost:4002".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -94,7 +94,7 @@ fn happy_path() {
     let tour_result = if tour_result.next_guide == "localhost:4001".to_string() {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide1_keys.clone(),
+            &guide1_keys,
             "localhost:4001".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -103,7 +103,7 @@ fn happy_path() {
     } else {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide2_keys.clone(),
+            &guide2_keys,
             "localhost:4002".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -126,7 +126,7 @@ fn happy_path() {
     let tour_result = if tour_result.next_guide == "localhost:4001".to_string() {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide1_keys.clone(),
+            &guide1_keys,
             "localhost:4001".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -135,7 +135,7 @@ fn happy_path() {
     } else {
         GtpCrypto::process_tour(
             &client_addr.to_string(),
-            guide2_keys.clone(),
+            &guide2_keys,
             "localhost:4002".to_string(),
             "localhost:8000".to_string(),
             request.clone(),
@@ -146,7 +146,7 @@ fn happy_path() {
 
     hxor = Blake3Hasher::xor(hxor, tour_result.h);
 
-    let mut aggregation_request: GtpAggregationRequest<Blake3Hasher> = GtpAggregationRequest {
+    let aggregation_request: GtpAggregationRequest<Blake3Hasher> = GtpAggregationRequest {
         h0: setup_response.h0,
         hl: hxor,
         length: setup_response.length,
@@ -162,7 +162,7 @@ fn happy_path() {
     let aggregation_result = if setup_response.address_1 == "localhost:4001".to_string() {
         GtpCrypto::aggregate(
             &client_addr.to_string(),
-            guide1_keys.clone(),
+            &guide1_keys,
             "localhost:4001".to_string(),
             "localhost:8000".to_string(),
             aggregation_request.clone(),
@@ -171,7 +171,7 @@ fn happy_path() {
     } else {
         GtpCrypto::aggregate(
             &client_addr.to_string(),
-            guide2_keys.clone(),
+            &guide2_keys,
             "localhost:4002".to_string(),
             "localhost:8000".to_string(),
             aggregation_request.clone(),
@@ -182,7 +182,7 @@ fn happy_path() {
 
     assert!(GtpCrypto::verify::<Blake3Hasher>(
         &client_addr.to_string(),
-        server_keys.clone(),
+        &server_keys,
         server_secret,
         GtpVerificationRequest {
             h0: setup_response.h0,

@@ -1,14 +1,14 @@
 use super::Secret;
-use borsh::{BorshDeserialize, BorshSerialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub trait Hmac {
-    type Sign: AsRef<[u8]> + Clone + core::fmt::Debug + BorshSerialize + BorshDeserialize;
+    type Sign: AsRef<[u8]> + Clone + core::fmt::Debug + DeserializeOwned + Serialize + Send;
     fn sign(value: &[u8], secret: &Secret) -> Self::Sign;
     fn verify(value: &[u8], sign: &Self::Sign, secret: &Secret) -> bool;
     fn xor(a: Self::Sign, b: Self::Sign) -> Self::Sign;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Blake3Hasher;
 
 impl Hmac for Blake3Hasher {

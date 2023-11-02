@@ -1,41 +1,41 @@
 pub mod hmac;
 #[cfg(test)]
 pub mod tests;
-use borsh::{BorshDeserialize, BorshSerialize};
 use hmac::Hmac;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 pub type Secret = [u8; 32];
 pub type Address = String;
 
 pub type SecretsStorage = Vec<(Address, Secret)>;
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpSetupResponse<H: Hmac> {
     pub h0: H::Sign,
     pub length: u8,
-    pub ts: u32,
+    pub ts: u128,
     pub msg: H::Sign,
     pub address_1: Address,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpVerificationRequest<H: Hmac> {
     pub h0: H::Sign,
     pub h_sol: H::Sign,
     pub length: u8,
-    pub first_ts: u32,
-    pub last_ts: u32,
+    pub first_ts: u128,
+    pub last_ts: u128,
     pub address_1: Address,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpAggregationRequest<H: Hmac> {
     pub h0: H::Sign,
     pub hl: H::Sign,
     pub length: u8,
     pub step: u8,
-    pub pervious_ts: u32,
+    pub pervious_ts: u128,
     pub previous_msg: H::Sign,
     pub previous_msg_2: H::Sign,
     pub address_1: Address,
@@ -43,33 +43,33 @@ pub struct GtpAggregationRequest<H: Hmac> {
     pub path: Vec<Address>,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpAggregationResponse<H: Hmac> {
     pub h_sol: H::Sign,
-    pub ts: u32,
+    pub ts: u128,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpTourResponse<H: Hmac> {
     pub h: H::Sign,
     pub msg: H::Sign,
-    pub ts: u32,
+    pub ts: u128,
     pub next_guide: Address,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GtpTourRequest<H: Hmac> {
     pub h0: H::Sign,
     pub length: u8,
     pub step: u8,
-    pub previous_ts: u32,
+    pub previous_ts: u128,
     pub previous_msg: H::Sign,
     pub previous_msg_2: H::Sign,
     pub address_1: Address,
     pub previous_address: Address,
 }
 
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GtpGuideTcpRequest<H: Hmac> {
     Tour(GtpTourRequest<H>),
     Aggregation(GtpAggregationRequest<H>),
@@ -109,10 +109,10 @@ impl GtpCrypto {
     pub fn setup<H: Hmac>(
         user_address: &Address,
         length: u8,
-        storage: SecretsStorage,
+        storage: &SecretsStorage,
         server_secret: Secret,
         server_address: String,
-        ts: u32,
+        ts: u128,
     ) -> GtpSetupResponse<H> {
         let next_guide: usize = rand::thread_rng().gen_range(0..storage.len() - 1);
         let (guide_address, guide_secret) = storage
@@ -141,13 +141,13 @@ impl GtpCrypto {
         }
     }
 
-    pub fn process_tour<H: Hmac + std::fmt::Debug>(
+    pub fn process_tour<H: Hmac>(
         user_address: &Address,
-        storage: SecretsStorage,
+        storage: &SecretsStorage,
         address_this: String,
         server_address: String,
         request: GtpTourRequest<H>,
-        ts: u32,
+        ts: u128,
     ) -> Option<GtpTourResponse<H>> {
         let (_, prev_guide_secret) = storage
             .iter()
@@ -206,11 +206,11 @@ impl GtpCrypto {
 
     pub fn aggregate<H: Hmac>(
         user_address: &Address,
-        storage: SecretsStorage,
+        storage: &SecretsStorage,
         address_this: String,
         server_address: Address,
         request: GtpAggregationRequest<H>,
-        ts: u32,
+        ts: u128,
     ) -> Option<GtpAggregationResponse<H>> {
         let mut h = request.h0.clone();
         for (i, address) in request.path.clone().into_iter().enumerate() {
@@ -260,11 +260,11 @@ impl GtpCrypto {
 
     pub fn verify<H: Hmac>(
         user_address: &Address,
-        storage: SecretsStorage,
+        storage: &SecretsStorage,
         server_secret: Secret,
         request: GtpVerificationRequest<H>,
-        time_delta: u32,
-        ts: u32,
+        time_delta: u128,
+        ts: u128,
     ) -> bool {
         let (_, guide_1_secret) = storage
             .iter()
